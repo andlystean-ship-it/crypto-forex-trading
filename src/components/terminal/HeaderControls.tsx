@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
-import type { Symbol, ModeLabel } from '@/lib/types'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Symbol, ModeLabel } from '@/lib/types'
 
-  onSymbolChange: (symbolId: st
+interface HeaderControlsProps {
   symbols: Symbol[]
   selectedSymbol: Symbol
   selectedMode: ModeLabel
@@ -12,24 +12,22 @@ import type { Symbol, ModeLabel } from '@/lib/types'
 }
 
 export function HeaderControls({
-          
+  symbols,
   selectedSymbol,
-          <Sele
-              <Se
-            <Se
-            
-          </Select>
-          
-              <SelectValue />
-            <SelectContent>
-                <SelectItem key={symbol.id} value
-                </SelectItem>
-            </
+  selectedMode,
+  onSymbolChange,
+  onModeChange,
+  className,
+}: HeaderControlsProps) {
+  return (
+    <div className={cn('px-4 py-4 border-b border-border/50 bg-card/20', className)}>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-base font-semibold tracking-tight">Crypto and Forex Trading</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Terminal Signal Intelligence</p>
         </div>
-    </div>
-}
-
-
+        
+        <div className="flex gap-2">
           <Select value={selectedMode} onValueChange={(v) => onModeChange(v as ModeLabel)}>
             <SelectTrigger className="w-[140px] h-8 text-xs border-accent/50 bg-card hover:border-accent transition-colors">
               <SelectValue />
