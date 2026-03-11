@@ -1,39 +1,39 @@
 import type { SignalData } from './signalEngine'
-import { computeSignalData } from './signalEngine'
+import { marketDataFetcher } from './server/market
 import { marketDataFetcher } from './server/marketData'
 import { newsAdapter } from './server/newsAdapter'
-import type { NewsItem } from './types'
-
 export interface MarketStateResponse {
-  data: SignalData
-  lastUpdated: number
+
   isStale: boolean
-}
+  data: SignalData
+export interface News
+  isStale: boolean
 
-export interface NewsResponse {
-  symbol: string
-  lastUpdated: number
-  items: NewsItem[]
-}
 
-const marketStateCache = new Map<string, { data: SignalData; timestamp: number }>()
-const CACHE_DURATION = 60000
-
-export async function fetchMarketState(symbolId: string, signal?: AbortSignal): Promise<MarketStateResponse> {
-  const cached = marketStateCache.get(symbolId)
-  const now = Date.now()
   
-  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+    return {
+      lastUpdated: ca
+    }
+ 
+
+    
+      data: signalData,
+
+    return {
+      lastUpdated: now,
+    }
+  
+        data: cached.data,
     return {
       data: cached.data,
       lastUpdated: cached.timestamp,
       isStale: false
-    }
+
   }
   
   try {
-    const candles = await marketDataFetcher.fetchCandles(symbolId, '5m', 120, signal)
-    const signalData = computeSignalData(symbolId, candles)
+    const marketData = await marketDataFetcher.fetchMarketData(symbolId, signal)
+    const signalData = computeSignalData(symbolId, marketData)
     
     marketStateCache.set(symbolId, {
       data: signalData,
@@ -53,32 +53,5 @@ export async function fetchMarketState(symbolId: string, signal?: AbortSignal): 
         isStale: true
       }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    throw error
-  }
-}
-
-export async function fetchNews(symbolId: string, signal?: AbortSignal): Promise<NewsResponse> {
-  const news = await newsAdapter.fetchNews(symbolId, signal)
-  
-  return {
-    symbol: symbolId,
-    lastUpdated: Date.now(),
-    items: news
-  }
-}
 
 
