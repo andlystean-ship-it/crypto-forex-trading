@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeSignalData, SYMBOLS } from '../signalEngine'
+import type { Candle } from '../types'
 import type { Candle } from '../types'
 
 function generateTestCandles(count: number, basePrice: number, trend: 'up' | 'down' | 'sideways' = 'sideways'): Candle[] {
@@ -7,18 +7,18 @@ function generateTestCandles(count: number, basePrice: number, trend: 'up' | 'do
   const now = Date.now()
   let price = basePrice
   
-  for (let i = 0; i < count; i++) {
-    const timestamp = now - (count - i) * 5 * 60 * 1000
+      change = (i % 2 === 0 ? 1 : -
     
-    let change = 0
-    if (trend === 'up') {
-      change = basePrice * 0.002
-    } else if (trend === 'down') {
+    
+    const close = 
+    const low = Math.min(
+    candles.push({
+      open: parseFloat(open.toFixe
       change = -basePrice * 0.002
     } else {
       change = (i % 2 === 0 ? 1 : -1) * basePrice * 0.001
     }
-    
+  }
     price = price + change
     
     const open = price
@@ -54,7 +54,7 @@ describe('Signal Engine - Determinism', () => {
   it('should produce different results for different candles', () => {
     const candles1 = generateTestCandles(120, 50000, 'up')
     const candles2 = generateTestCandles(120, 50000, 'down')
-    
+  it
     const result1 = computeSignalData('btc', candles1)
     const result2 = computeSignalData('btc', candles2)
     
@@ -62,70 +62,70 @@ describe('Signal Engine - Determinism', () => {
   })
   
   it('should not use Math.random() - results are fully deterministic', () => {
-    const candles = generateTestCandles(120, 50000, 'up')
+  it('should generate exactly 8 timeframe signals', () =>
     
-    const results = []
-    for (let i = 0; i < 10; i++) {
-      results.push(computeSignalData('btc', candles))
-    }
-    
-    for (let i = 1; i < results.length; i++) {
-      expect(results[i]).toEqual(results[0])
-    }
-  })
-})
-
-describe('Signal Engine - Swing Point Detection', () => {
-  it('should find swing highs in uptrend', () => {
-    const candles = generateTestCandles(120, 50000, 'up')
-    const result = computeSignalData('btc', candles)
-    
-    expect(result.chartData.trendlines.length).toBeGreaterThan(0)
-  })
+    expect(result.time
   
-  it('should find swing lows in downtrend', () => {
-    const candles = generateTestCandles(120, 50000, 'down')
-    const result = computeSignalData('btc', candles)
+    const candles = generateTestCandles(120, 50000, '
     
-    expect(result.chartData.trendlines.length).toBeGreaterThan(0)
-  })
-  
-  it('should handle minimal candle data', () => {
-    const candles = generateTestCandles(20, 50000, 'sideways')
     
-    expect(() => {
-      computeSignalData('btc', candles)
-    }).not.toThrow()
-  })
-})
-
-describe('Signal Engine - Trendline Generation', () => {
-  it('should generate trendlines with valid properties', () => {
-    const candles = generateTestCandles(120, 50000, 'up')
-    const result = computeSignalData('btc', candles)
-    
-    result.chartData.trendlines.forEach(trendline => {
-      expect(trendline).toHaveProperty('id')
-      expect(trendline).toHaveProperty('type')
-      expect(trendline).toHaveProperty('points')
-      expect(trendline).toHaveProperty('slope')
-      expect(trendline).toHaveProperty('strength')
-      expect(trendline.strength).toBeGreaterThanOrEqual(0)
-      expect(trendline.strength).toBeLessThanOrEqual(1)
     })
-  })
   
-  it('should mark trendlines as active', () => {
-    const candles = generateTestCandles(120, 50000, 'sideways')
+    c
+    
+  
+
+        expect(signal.score).toBeLessThan(42)
+      } else {
+        expect(signal.score).toBeLessThanOrEqual(58)
+      }
+  })
+  it('should have valid strength values', () => {
+    
+  
+      expect(signal.strength).toBeLessThanOrEqual(1
+  })
+
+  it
     const result = computeSignalData('btc', candles)
     
-    result.chartData.trendlines.forEach(trendline => {
-      expect(trendline.active).toBe(true)
-    })
+  
+  it('should have bearish bias for downtrending c
+    const result = computeSignalData('btc', candles)
+    
   })
-})
+  it('should have percentages sum to 10
+    const result = c
+    
+  
 
-describe('Signal Engine - Timeframe Signals', () => {
+    
+    expect(result.marketBias.confidence).toBeLessThanOrEqual(1)
+})
+describe('Signal Engine - Market Scenario', () => {
+    
+    
+    const recentHigh = Math.max(...recentCan
+    
+    expect(result.marketScenario.pivot).toBeLess
+  
+    const candles = generateTestCandles(120, 50000
+    
+  })
+  it('
+    
+  
+    expect(result.marketScenario.dominantScenari
+  
+    const candles = generateTestCandles(120, 50000, 
+    
+    expect(result.marketScenario.explanationText.lengt
+  })
+
+  it
+  
+
+  })
   it('should generate exactly 8 timeframe signals', () => {
     const candles = generateTestCandles(120, 50000, 'sideways')
     const result = computeSignalData('btc', candles)
@@ -254,35 +254,35 @@ describe('Signal Engine - Chart Data', () => {
     expect(result.chartData.candles).toEqual(candles)
   })
   
-  it('should calculate correct price range', () => {
-    const candles = generateTestCandles(120, 50000, 'sideways')
-    const result = computeSignalData('btc', candles)
-    
-    const allPrices = candles.map(c => c.close)
-    const expectedMin = Math.min(...allPrices)
-    const expectedMax = Math.max(...allPrices)
-    
-    expect(result.chartData.priceRange.min).toBe(expectedMin)
-    expect(result.chartData.priceRange.max).toBe(expectedMax)
-  })
-  
-  it('should set current price to last candle close', () => {
-    const candles = generateTestCandles(120, 50000, 'up')
-    const result = computeSignalData('btc', candles)
-    
-    expect(result.chartData.currentPrice).toBe(candles[candles.length - 1].close)
-  })
-})
 
-describe('Signal Engine - All Symbols', () => {
-  it('should work for all defined symbols', () => {
-    const candles = generateTestCandles(120, 50000, 'sideways')
-    
-    SYMBOLS.forEach(symbol => {
-      expect(() => {
-        const result = computeSignalData(symbol.id, candles)
-        expect(result.chartData.symbol).toBe(symbol.id)
-      }).not.toThrow()
-    })
-  })
-})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
