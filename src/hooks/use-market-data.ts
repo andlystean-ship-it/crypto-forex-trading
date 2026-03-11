@@ -30,7 +30,7 @@ export function useMarketState(symbolId: string): UseMarketStateResult {
     setError(null)
     
     try {
-      const response: MarketStateResponse = await fetchMarketState(symbolId)
+      const response: MarketStateResponse = await fetchMarketState(symbolId, abortControllerRef.current.signal)
       setData(response.data)
       setIsStale(response.isStale)
       setLastUpdated(response.lastUpdated)
@@ -86,7 +86,7 @@ export function useNews(symbolId: string): UseNewsResult {
     setError(null)
     
     try {
-      const response: NewsResponse = await fetchNews(symbolId)
+      const response: NewsResponse = await fetchNews(symbolId, abortControllerRef.current.signal)
       setNews(response.items)
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {

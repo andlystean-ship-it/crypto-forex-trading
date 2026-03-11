@@ -1,75 +1,86 @@
 import type { Candle } from '../types'
 
 export interface MarketDataSource {
-  fetchCandles(symbol: string, interval: string, limit: number): Promise<Candle[]>
+  fetchCandles(symbol: string, interval: string, limit: number, signal?: AbortSignal): Promise<Candle[]>
   getSymbolMapping(symbolId: string): string | undefined
 }
 
-const SYMBOL_MAPPINGS: Record<string, string> = {
-  btc: 'BTCUSDT',
-  eth: 'ETHUSDT',
-  xau: 'XAUUSD',
+const SYMBOL_MAPPINGS: Record<string, { exchange: string; symbol: string }> = {
+  btc: { exchange: 'binance', symbol: 'BTCUSDT' },
+  eth: { exchange: 'binance', symbol: 'ETHUSDT' },
+  xau: { exchange: 'forex', symbol: 'XAUUSD' },
 }
 
 const BINANCE_API_BASE = 'https://api.binance.com/api/v3'
-const FALLBACK_CANDLES_COUNT = 120
+const TWELVE_DATA_API_BASE = 'https://api.twelvedata.com'
 
-async function fetchBinanceCandles(symbol: string, interval: string = '5m', limit: number = 120): Promise<Candle[]> {
-  try {
-    const url = `${BINANCE_API_BASE}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
-    const response = await fetch(url)
-    
-    if (!response.ok) {
-      throw new Error(`Binance API error: ${response.statusText}`)
-    }
-    
-    const data = await response.json()
-    
-    return data.map((k: any[]) => ({
-      timestamp: k[0],
-      open: parseFloat(k[1]),
-      high: parseFloat(k[2]),
-      low: parseFloat(k[3]),
-      close: parseFloat(k[4]),
-      volume: parseFloat(k[5]),
-    }))
-  } catch (error) {
-    console.error('Error fetching Binance candles:', error)
-    throw error
-  }
+const INTERVAL_MAPPING: Record<string, string> = {
+  '5m': '5min',
+  '15m': '15min',
+  '1h': '1h',
+  '2h': '2h',
+  '4h': '4h',
+  '1d': '1day',
 }
 
-async function fetchGoldCandles(symbol: string, limit: number = 120): Promise<Candle[]> {
-  const basePrice = 2650
-  const now = Date.now()
-  const candles: Candle[] = []
+async function fetchBinanceCandles(
+  symbol: string,
+  interval: string = '5m',
+  limit: number = 120,
+  signal?: AbortSignal
+): Promise<Candle[]> {
+  const url = `${BINANCE_API_BASE}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
+  const response = await fetch(url, { signal })
   
-  let price = basePrice
-  
-  for (let i = 0; i < limit; i++) {
-    const timestamp = now - (limit - i) * 5 * 60 * 1000
-    const volatility = basePrice * 0.001
-    const change = (Math.random() - 0.5) * volatility
-    price = price + change
-    
-    const open = price
-    const close = price + (Math.random() - 0.5) * volatility * 0.5
-    const high = Math.max(open, close) + Math.random() * volatility * 0.3
-    const low = Math.min(open, close) - Math.random() * volatility * 0.3
-    
-    candles.push({
-      timestamp,
-      open: parseFloat(open.toFixed(2)),
-      high: parseFloat(high.toFixed(2)),
-      low: parseFloat(low.toFixed(2)),
-      close: parseFloat(close.toFixed(2)),
-      volume: Math.random() * 100000 + 50000,
-    })
-    
-    price = close
+  if (!response.ok) {
+    throw new Error(`Binance API error: ${response.statusText}`)
   }
   
-  return candles
+  const data = await response.json()
+  
+  return data.map((k: any[]) => ({
+    timestamp: k[0],
+    open: parseFloat(k[1]),
+    high: parseFloat(k[2]),
+    low: parseFloat(k[3]),
+    close: parseFloat(k[4]),
+    volume: parseFloat(k[5]),
+  }))
+}
+
+async function fetchForexCandles(
+  symbol: string,
+  interval: string = '5m',
+  limit: number = 120,
+  signal?: AbortSignal
+): Promise<Candle[]> {
+  const mappedInterval = INTERVAL_MAPPING[interval] || '5min'
+  const url = `${TWELVE_DATA_API_BASE}/time_series?symbol=${symbol}&interval=${mappedInterval}&outputsize=${limit}&format=JSON`
+  
+  const response = await fetch(url, { signal })
+  
+  if (!response.ok) {
+    throw new Error(`Forex API error: ${response.statusText}`)
+  }
+  
+  const data = await response.json()
+  
+  if (data.status === 'error') {
+    throw new Error(`Forex API error: ${data.message || 'Unknown error'}`)
+  }
+  
+  if (!data.values || data.values.length === 0) {
+    throw new Error('No forex data available')
+  }
+  
+  return data.values.reverse().map((item: any) => ({
+    timestamp: new Date(item.datetime).getTime(),
+    open: parseFloat(item.open),
+    high: parseFloat(item.high),
+    low: parseFloat(item.low),
+    close: parseFloat(item.close),
+    volume: parseFloat(item.volume || '0'),
+  }))
 }
 
 export class MarketDataFetcher implements MarketDataSource {
@@ -77,10 +88,16 @@ export class MarketDataFetcher implements MarketDataSource {
   private cacheDuration = 60000
   
   getSymbolMapping(symbolId: string): string | undefined {
-    return SYMBOL_MAPPINGS[symbolId]
+    const mapping = SYMBOL_MAPPINGS[symbolId]
+    return mapping ? mapping.symbol : undefined
   }
   
-  async fetchCandles(symbolId: string, interval: string = '5m', limit: number = 120): Promise<Candle[]> {
+  async fetchCandles(
+    symbolId: string,
+    interval: string = '5m',
+    limit: number = 120,
+    signal?: AbortSignal
+  ): Promise<Candle[]> {
     const cacheKey = `${symbolId}:${interval}:${limit}`
     const cached = this.cache.get(cacheKey)
     
@@ -88,23 +105,42 @@ export class MarketDataFetcher implements MarketDataSource {
       return cached.candles
     }
     
-    const marketSymbol = this.getSymbolMapping(symbolId)
+    const mapping = SYMBOL_MAPPINGS[symbolId]
     
-    if (!marketSymbol) {
+    if (!mapping) {
       throw new Error(`Unknown symbol: ${symbolId}`)
     }
     
     let candles: Candle[]
     
-    if (symbolId === 'xau') {
-      candles = await fetchGoldCandles(marketSymbol, limit)
-    } else {
-      candles = await fetchBinanceCandles(marketSymbol, interval, limit)
+    try {
+      if (mapping.exchange === 'forex') {
+        candles = await fetchForexCandles(mapping.symbol, interval, limit, signal)
+      } else if (mapping.exchange === 'binance') {
+        candles = await fetchBinanceCandles(mapping.symbol, interval, limit, signal)
+      } else {
+        throw new Error(`Unsupported exchange: ${mapping.exchange}`)
+      }
+      
+      if (candles.length === 0) {
+        throw new Error(`No candles received for ${symbolId}`)
+      }
+      
+      this.cache.set(cacheKey, { candles, timestamp: Date.now() })
+      
+      return candles
+    } catch (error) {
+      if (signal?.aborted) {
+        throw new Error('Request aborted')
+      }
+      
+      if (cached) {
+        console.warn(`Using stale cache for ${symbolId}, fetch failed:`, error)
+        return cached.candles
+      }
+      
+      throw error
     }
-    
-    this.cache.set(cacheKey, { candles, timestamp: Date.now() })
-    
-    return candles
   }
   
   clearCache() {

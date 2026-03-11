@@ -357,14 +357,22 @@ All code runs in single runtime - backend and frontend served together.
 - [x] API layer with caching
 - [x] Frontend data hooks
 - [x] Error and stale state handling
-- [x] Request cancellation
+- [x] Request cancellation with AbortSignal
+- [x] Forex API integration for XAU (Twelve Data)
+- [x] Real news API integration (NewsAPI.org with intelligent fallback)
+- [x] Deterministic signal engine (no Math.random())
+- [x] Comprehensive test suite for signal engine
+- [x] Production-ready error handling and logging
 
-### Remaining ⚠️
-- [ ] Forex API integration for XAU (currently simulated)
-- [ ] Real news API integration (currently templates)
-- [ ] Rate limiting and abuse prevention
-- [ ] Production monitoring setup
+### Remaining for High-Scale Production ⚠️
+- [ ] Rate limiting middleware (documented, ready to implement)
+- [ ] Health check endpoint (documented, ready to implement)
+- [ ] Persistent caching layer with spark.kv or Redis
+- [ ] Production monitoring with Sentry/Datadog
 - [ ] Load testing and optimization
+- [ ] Upgrade to paid API tiers for higher rate limits
+
+**See IMPLEMENTATION_REPORT.md for detailed migration documentation**
 
 ## Code Maintenance Guidelines
 

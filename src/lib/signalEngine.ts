@@ -115,20 +115,39 @@ function generateTimeframeSignals(candles: Candle[]): TimeframeSignal[] {
   const currentPrice = candles[candles.length - 1].close
   const shortTermCandles = candles.slice(-20)
   const midTermCandles = candles.slice(-60)
+  const longTermCandles = candles.slice(-120)
 
   const shortTermClose = shortTermCandles[0].close
   const midTermClose = midTermCandles[0].close
+  const longTermClose = longTermCandles[0].close
 
   const shortTermMomentum = (currentPrice - shortTermClose) / shortTermClose
   const midTermMomentum = (currentPrice - midTermClose) / midTermClose
-  const overallBias = shortTermMomentum > 0.002 ? 1 : shortTermMomentum < -0.002 ? -1 : 0
+  const longTermMomentum = (currentPrice - longTermClose) / longTermClose
+
+  const calculateVolatility = (subCandles: Candle[]): number => {
+    if (subCandles.length < 2) return 0
+    const returns = []
+    for (let i = 1; i < subCandles.length; i++) {
+      returns.push((subCandles[i].close - subCandles[i - 1].close) / subCandles[i - 1].close)
+    }
+    const mean = returns.reduce((a, b) => a + b, 0) / returns.length
+    const variance = returns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / returns.length
+    return Math.sqrt(variance)
+  }
+
+  const shortTermVol = calculateVolatility(shortTermCandles)
+  const midTermVol = calculateVolatility(midTermCandles)
 
   return timeframes.map((timeframe, index) => {
     const timeframeWeight = 8 - index
-    const timeframeInfluence = index < 3 ? shortTermMomentum : midTermMomentum
-    const biasFactor = overallBias * 0.3 + timeframeInfluence * 5
-
-    const bullishPercent = Math.max(20, Math.min(80, 50 + biasFactor * 20 + (Math.random() - 0.5) * 15))
+    const timeframeInfluence = index < 3 ? shortTermMomentum : index < 6 ? midTermMomentum : longTermMomentum
+    const volatilityFactor = index < 3 ? shortTermVol : midTermVol
+    
+    const biasFactor = timeframeInfluence * 10
+    const volatilityAdjustment = volatilityFactor * 100
+    
+    const bullishPercent = Math.max(20, Math.min(80, 50 + biasFactor * 10 + volatilityAdjustment * (timeframeInfluence > 0 ? 1 : -1)))
     const bearishPercent = 100 - bullishPercent
 
     const bullishLevel = Number((currentPrice * (1 + timeframeWeight * 0.01)).toFixed(2))
