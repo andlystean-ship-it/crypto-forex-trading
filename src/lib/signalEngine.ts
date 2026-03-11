@@ -104,36 +104,45 @@ function findSwingPoints(candles: Candle[], lookback: number = 5) {
 function generateTrendlines(candles: Candle[], symbolId: string): Trendline[] {
   const { highs, lows } = findSwingPoints(candles)
   const trendlines: Trendline[] = []
+  const currentPrice = candles[candles.length - 1].close
 
   if (lows.length >= 2) {
     const recentLows = lows.slice(-3)
     const slope = (recentLows[recentLows.length - 1].price - recentLows[0].price) / (recentLows[recentLows.length - 1].index - recentLows[0].index)
+    const isRising = slope > 0
+    const lastLowPrice = recentLows[recentLows.length - 1].price
+    const distance = Math.abs(currentPrice - lastLowPrice) / currentPrice
+    const strength = isRising ? Math.min(0.9, 0.6 + distance * 2) : Math.min(0.8, 0.5 + distance * 2)
 
     trendlines.push({
-      id: `${symbolId}-asc-1`,
+      id: `${symbolId}-support`,
       type: 'ascending',
       points: recentLows.map((l) => ({ x: l.index, y: l.price })),
       slope,
-      active: true,
-      strength: 0.8,
-      broken: false,
-      label: 'Hỗ trợ xu hướng tăng',
+      active: distance < 0.03,
+      strength,
+      broken: distance > 0.04 && currentPrice < lastLowPrice,
+      label: isRising ? 'Support tăng dần' : 'Support nằm ngang',
     })
   }
 
   if (highs.length >= 2) {
     const recentHighs = highs.slice(-3)
     const slope = (recentHighs[recentHighs.length - 1].price - recentHighs[0].price) / (recentHighs[recentHighs.length - 1].index - recentHighs[0].index)
+    const isFalling = slope < 0
+    const lastHighPrice = recentHighs[recentHighs.length - 1].price
+    const distance = Math.abs(currentPrice - lastHighPrice) / currentPrice
+    const strength = isFalling ? Math.min(0.9, 0.6 + distance * 2) : Math.min(0.8, 0.5 + distance * 2)
 
     trendlines.push({
-      id: `${symbolId}-desc-1`,
+      id: `${symbolId}-resistance`,
       type: 'descending',
       points: recentHighs.map((h) => ({ x: h.index, y: h.price })),
       slope,
-      active: true,
-      strength: 0.75,
-      broken: false,
-      label: 'Kháng cự xu hướng giảm',
+      active: distance < 0.03,
+      strength,
+      broken: distance > 0.04 && currentPrice > lastHighPrice,
+      label: isFalling ? 'Resistance giảm dần' : 'Resistance nằm ngang',
     })
   }
 
@@ -143,29 +152,34 @@ function generateTrendlines(candles: Candle[], symbolId: string): Trendline[] {
 function calculateTimeframeSignals(candles: Candle[], symbolId: string): TimeframeSignal[] {
   const currentPrice = candles[candles.length - 1].close
   const priceConfig = SYMBOL_PRICE_RANGES[symbolId]
-  const baseRange = priceConfig.range
 
   const recentCandles = candles.slice(-20)
   const avgPrice = recentCandles.reduce((sum, c) => sum + c.close, 0) / recentCandles.length
   const momentum = (currentPrice - avgPrice) / avgPrice
 
+  const shortTermCandles = candles.slice(-10)
+  const shortTermMomentum = (currentPrice - shortTermCandles[0].close) / shortTermCandles[0].close
+
+  const overallBias = momentum > 0.002 ? 1 : momentum < -0.002 ? -1 : 0
+
   return TIMEFRAMES.map((timeframe, index) => {
-    const timeframeWeight = [0.5, 0.7, 0.8, 1.0, 1.2, 1.4, 1.6, 2.0][index]
-    const momentumInfluence = momentum * (0.3 + index * 0.1)
+    const timeframeWeight = [0.4, 0.6, 0.8, 1.0, 1.3, 1.6, 2.0, 2.5][index]
+    const timeframeInfluence = index < 3 ? shortTermMomentum : momentum
     
-    const baseBullish = 50 + momentumInfluence * 50
-    const baseBearish = 50 - momentumInfluence * 50
+    const baseBias = overallBias * (30 + index * 5)
+    const momentumComponent = timeframeInfluence * (40 + index * 8)
     
-    const noise = (Math.random() - 0.5) * 8
-    const bullishPercent = Math.max(10, Math.min(90, baseBullish + noise))
+    const noise = (Math.random() - 0.5) * (6 - index * 0.4)
+    
+    const bullishPercent = Math.max(15, Math.min(85, 50 + baseBias + momentumComponent * 100 + noise))
     const bearishPercent = 100 - bullishPercent
 
     const bullishLevel = Number((currentPrice * (1 + timeframeWeight * 0.01)).toFixed(2))
     const bearishLevel = Number((currentPrice * (1 - timeframeWeight * 0.01)).toFixed(2))
 
     let bias: BiasDirection = 'neutral'
-    if (bullishPercent > 58) bias = 'bullish'
-    else if (bearishPercent > 58) bias = 'bearish'
+    if (bullishPercent > 55) bias = 'bullish'
+    else if (bearishPercent > 55) bias = 'bearish'
 
     const strength = Math.abs(bullishPercent - bearishPercent) / 100
 
@@ -214,33 +228,46 @@ function aggregateMarketBias(signals: TimeframeSignal[]): MarketBias {
 
 function generateMarketScenario(candles: Candle[], bias: MarketBias, symbolId: string): MarketScenario {
   const currentPrice = candles[candles.length - 1].close
-  const priceConfig = SYMBOL_PRICE_RANGES[symbolId]
-  const baseRange = priceConfig.range
-
-  const pivotOffset = (bias.bullishPercent - bias.bearishPercent) * 0.0003 * currentPrice
-  const pivot = Number((currentPrice + pivotOffset).toFixed(2))
   
-  const targetMultiplier = bias.dominantSide === 'bullish' ? 0.018 : -0.016
+  const recentCandles = candles.slice(-5)
+  const recentHigh = Math.max(...recentCandles.map(c => c.high))
+  const recentLow = Math.min(...recentCandles.map(c => c.low))
+  const range = recentHigh - recentLow
+
+  const pivotBias = (bias.bullishPercent - 50) * 0.0002
+  const pivot = Number((currentPrice * (1 + pivotBias)).toFixed(2))
+  
+  const targetMultiplier = bias.dominantSide === 'bullish' ? 0.015 : -0.014
   const targetPrice = Number((currentPrice * (1 + targetMultiplier)).toFixed(2))
   
-  const pendingLong = Number((currentPrice * 0.994).toFixed(2))
-  const pendingShort = Number((currentPrice * 1.006).toFixed(2))
+  const pendingLong = Number((currentPrice * 0.995).toFixed(2))
+  const pendingShort = Number((currentPrice * 1.005).toFixed(2))
 
   let explanationText = ''
   let cautionText = ''
 
-  const biasStrength = bias.confidence > 0.2 ? 'mạnh' : 'yếu'
+  const biasStrength = bias.confidence > 0.25 ? 'mạnh' : bias.confidence > 0.15 ? 'trung bình' : 'yếu'
   const distanceToPivot = ((currentPrice - pivot) / currentPrice) * 100
 
-  if (distanceToPivot < -0.1) {
-    explanationText = `Giá dưới Pivot ${pivot}, xu hướng ${bias.dominantSide === 'bullish' ? 'tăng' : 'giảm'} ${biasStrength}. Entry long: ${pendingLong}.`
-    cautionText = 'Quan sát phản ứng tại vùng hỗ trợ quan trọng.'
-  } else if (distanceToPivot > 0.1) {
-    explanationText = `Giá trên Pivot ${pivot}, momentum ${bias.dominantSide === 'bullish' ? 'tăng' : 'giảm'} đang duy trì. Target: ${targetPrice}.`
-    cautionText = 'Theo dõi kháng cự/hỗ trợ gần nhất.'
+  if (bias.dominantSide === 'bullish') {
+    if (distanceToPivot < -0.05) {
+      explanationText = `Giá đang dưới Pivot ${pivot}, nhưng timeframe lớn ủng hộ tăng. Canh entry tại hỗ trợ.`
+      cautionText = 'Chờ giá test lại vùng hỗ trợ và xuất hiện tín hiệu reversal.'
+    } else {
+      explanationText = `Giá holding tốt trên ${pivot}, bias tăng ${biasStrength}. Target ${targetPrice}.`
+      cautionText = 'Theo dõi volume khi tiến gần target, tránh FOMO vào muộn.'
+    }
+  } else if (bias.dominantSide === 'bearish') {
+    if (distanceToPivot > 0.05) {
+      explanationText = `Giá trên Pivot ${pivot}, nhưng áp lực giảm từ khung lớn. Rejection zone.`
+      cautionText = 'Chờ confirmation giảm rõ ràng, không long vào kháng cự.'
+    } else {
+      explanationText = `Giá đang dưới ${pivot}, xu hướng giảm ${biasStrength}. Target ${targetPrice}.`
+      cautionText = 'Tránh đứng trước tin tức quan trọng, momentum giảm có thể đảo chiều nhanh.'
+    }
   } else {
-    explanationText = `Giá tại Pivot ${pivot}, chờ breakout xác nhận hướng đi. Bias ${bias.bullishPercent}% bullish.`
-    cautionText = 'Chờ tín hiệu rõ ràng trước khi vào lệnh.'
+    explanationText = `Giá tại Pivot ${pivot}, thị trường sideways. Chờ breakout rõ ràng.`
+    cautionText = 'Không vào lệnh khi chưa có hướng, risk/reward không tốt.'
   }
 
   const dominantSide = bias.dominantSide === 'neutral' ? 'long' : (bias.dominantSide === 'bullish' ? 'long' : 'short')
@@ -259,21 +286,21 @@ function generateMarketScenario(candles: Candle[], bias: MarketBias, symbolId: s
       target: targetPrice,
       reason: 
         dominantSide === 'long'
-          ? `Timeframe lớn hỗ trợ tăng (${bias.bullishPercent}%), giá holding structure tốt.`
-          : `Áp lực giảm từ timeframe cao (${bias.bearishPercent}%), rejection tại resistance.`,
+          ? `Timeframe ${bias.confidence > 0.25 ? '4H-1D' : '1H-4H'} hỗ trợ tăng. Giá holding structure, entry tại ${dominantSide === 'long' ? pendingLong : pendingShort}.`
+          : `Áp lực bán từ khung ${bias.confidence > 0.25 ? 'Daily' : '4H'}. Rejection tại kháng cự, canh short nếu confirm.`,
     },
     alternateScenario: {
       side: alternateSide,
       trigger: alternateSide === 'long' ? pendingLong : pendingShort,
-      target: alternateSide === 'long' ? pendingShort * 1.012 : pendingLong * 0.988,
+      target: Number((alternateSide === 'long' ? pendingShort * 1.011 : pendingLong * 0.989).toFixed(2)),
       reason:
         alternateSide === 'long'
-          ? 'Nếu reclaim pivot và hold, kịch bản long trở lại với mục tiêu cao hơn.'
-          : 'Nếu bị reject mạnh và mất structure, chuyển sang kịch bản short.',
+          ? 'Kịch bản thay thế: Reclaim pivot và close trên kháng cự → chuyển long, target cao hơn.'
+          : 'Kịch bản thay thế: Mất structure và break support → chuyển short, target thấp hơn.',
     },
     explanationText,
     cautionText,
-    invalidationLevel: dominantSide === 'long' ? pendingLong * 0.997 : pendingShort * 1.003,
+    invalidationLevel: dominantSide === 'long' ? pendingLong * 0.996 : pendingShort * 1.004,
   }
 }
 

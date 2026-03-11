@@ -95,14 +95,17 @@ export function TradingChart({ chartData, scenario, className }: TradingChartPro
     })
 
     const levels = [
-      { price: scenario.targetPrice, label: 'TARGET', color: 'oklch(0.85 0.18 95)', side: 'target' },
-      { price: scenario.pendingShort, label: 'SHORT ENTRY', color: 'oklch(0.65 0.25 25)', side: 'short' },
-      { price: scenario.pendingLong, label: 'LONG ENTRY', color: 'oklch(0.85 0.22 150)', side: 'long' },
+      { price: scenario.targetPrice, label: 'TARGET', color: 'oklch(0.85 0.18 95)', side: 'target', weight: 2.5 },
+      { price: scenario.pendingShort, label: 'SHORT', color: 'oklch(0.65 0.25 25)', side: 'short', weight: 2 },
+      { price: scenario.pendingLong, label: 'LONG', color: 'oklch(0.85 0.22 150)', side: 'long', weight: 2 },
     ]
+
+    const priceAxisStart = width + 4
 
     levels.forEach((level) => {
       const y = yScale(level.price)
-      const labelPadding = 6
+      const labelPadding = 8
+      const leftMargin = 8
 
       g.append('line')
         .attr('x1', 0)
@@ -110,19 +113,20 @@ export function TradingChart({ chartData, scenario, className }: TradingChartPro
         .attr('y1', y)
         .attr('y2', y)
         .attr('stroke', level.color)
-        .attr('stroke-width', 2)
-        .attr('stroke-opacity', 0.9)
-        .attr('stroke-dasharray', '6,4')
+        .attr('stroke-width', level.weight)
+        .attr('stroke-opacity', 0.95)
+        .attr('stroke-dasharray', level.side === 'target' ? '8,4' : '4,3')
 
-      const bgPadding = 3
+      const bgPadding = 4
       const textElem = g.append('text')
-        .attr('x', width - labelPadding)
+        .attr('x', leftMargin + bgPadding)
         .attr('y', y - labelPadding)
         .attr('fill', level.color)
-        .attr('font-size', '9px')
-        .attr('font-weight', '700')
+        .attr('font-size', '10px')
+        .attr('font-weight', '800')
         .attr('font-family', 'JetBrains Mono, monospace')
-        .attr('text-anchor', 'end')
+        .attr('text-anchor', 'start')
+        .attr('letter-spacing', '0.5px')
         .text(level.label)
 
       const bbox = (textElem.node() as SVGTextElement).getBBox()
@@ -133,28 +137,33 @@ export function TradingChart({ chartData, scenario, className }: TradingChartPro
         .attr('width', bbox.width + bgPadding * 2)
         .attr('height', bbox.height + bgPadding * 2)
         .attr('fill', 'oklch(0.15 0.01 240)')
-        .attr('opacity', 0.9)
-        .attr('rx', 2)
+        .attr('opacity', 0.95)
+        .attr('rx', 3)
 
       g.append('text')
-        .attr('x', width + 6)
-        .attr('y', y + 3)
+        .attr('x', priceAxisStart)
+        .attr('y', y + 4)
         .attr('fill', level.color)
-        .attr('font-size', '10px')
-        .attr('font-weight', '700')
+        .attr('font-size', '11px')
+        .attr('font-weight', '800')
         .attr('font-family', 'JetBrains Mono, monospace')
         .text(level.price.toFixed(2))
     })
 
-    g.append('text')
-      .attr('x', width / 2)
-      .attr('y', -10)
-      .attr('fill', 'oklch(0.75 0.15 195)')
-      .attr('font-size', '11px')
-      .attr('font-weight', '500')
-      .attr('text-anchor', 'middle')
-      .attr('opacity', 0.9)
-      .text(scenario.explanationText)
+    const explanationLines = scenario.explanationText.split('. ')
+    explanationLines.forEach((line, index) => {
+      if (line.trim()) {
+        g.append('text')
+          .attr('x', width / 2)
+          .attr('y', -12 + index * 12)
+          .attr('fill', 'oklch(0.70 0.12 195)')
+          .attr('font-size', '10px')
+          .attr('font-weight', '600')
+          .attr('text-anchor', 'middle')
+          .attr('opacity', 0.95)
+          .text(line.trim() + (index < explanationLines.length - 1 ? '.' : ''))
+      }
+    })
 
     const yAxis = d3.axisRight(yScale).ticks(6).tickSize(0).tickFormat(d3.format('.2f'))
 

@@ -105,7 +105,7 @@ function App() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="relative">
         <div
-          className="absolute inset-0 opacity-[0.06] pointer-events-none"
+          className="absolute inset-0 opacity-[0.05] pointer-events-none"
           style={{
             backgroundImage: `
               repeating-linear-gradient(0deg, oklch(0.75 0.15 195) 0px, transparent 1px, transparent 24px),
@@ -125,15 +125,15 @@ function App() {
 
           <BiasBar bias={signalData.marketBias} />
 
-          <TimeframeStrip signals={signalData.timeframeSignals} className="py-2" />
+          <TimeframeStrip signals={signalData.timeframeSignals} className="py-2.5" />
 
-          <div className="px-3 pt-3 pb-2">
+          <div className="px-3 pt-2 pb-2">
             <div 
               className="bg-card/30 rounded-lg border border-border/50 overflow-hidden" 
               style={{ 
                 boxShadow: signalData.marketBias.dominantSide === 'bullish' 
-                  ? '0 4px 24px -4px oklch(0.85 0.22 150 / 0.15)' 
-                  : '0 4px 24px -4px oklch(0.65 0.25 25 / 0.15)'
+                  ? '0 4px 32px -6px oklch(0.85 0.22 150 / 0.2)' 
+                  : '0 4px 32px -6px oklch(0.65 0.25 25 / 0.2)'
               }}
             >
               <TradingChart chartData={signalData.chartData} scenario={signalData.marketScenario} />
@@ -148,9 +148,9 @@ function App() {
 
           {renderTabContent()}
 
-          <div className="mt-4 border-t border-border/30 bg-card/10">
+          <div className="mt-3 border-t border-border/30 bg-card/10">
             <div className="pt-3">
-              <h2 className="px-3 text-xs font-bold mb-2 uppercase tracking-wide text-muted-foreground">Tin tức & Cảm xúc thị trường</h2>
+              <h2 className="px-3 text-[10px] font-bold mb-2.5 uppercase tracking-wider text-muted-foreground">Tin tức & Cảm xúc thị trường</h2>
 
               <NewsFilterBar
                 categories={NEWS_CATEGORIES}
@@ -158,7 +158,7 @@ function App() {
                 onCategoryChange={setSelectedNewsCategory}
               />
 
-              <div className="px-3 py-3 space-y-3">
+              <div className="px-3 py-2.5 space-y-2.5">
                 {filteredNews.map((news) => (
                   <NewsCard key={news.id} news={news} />
                 ))}

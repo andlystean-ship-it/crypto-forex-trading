@@ -9,40 +9,44 @@ interface TimeframeCardProps {
 export function TimeframeCard({ signal, className }: TimeframeCardProps) {
   const { timeframe, bullishLevel, bearishLevel, bias, strength } = signal
 
-  const isStrongSignal = strength > 0.35
+  const isStrongSignal = strength > 0.3
   
   const cardBg = bias === 'bullish' 
-    ? 'bg-primary/10 border-primary/40' 
+    ? 'bg-primary/15 border-primary/50' 
     : bias === 'bearish' 
-    ? 'bg-destructive/10 border-destructive/40' 
-    : 'bg-card/50 border-border/50'
+    ? 'bg-destructive/15 border-destructive/50' 
+    : 'bg-card/40 border-border/40'
 
   const glowStyle = isStrongSignal && bias !== 'neutral'
     ? {
         boxShadow: bias === 'bullish'
-          ? '0 0 12px -2px var(--primary)'
-          : '0 0 12px -2px var(--destructive)'
+          ? '0 0 16px -3px var(--primary)'
+          : '0 0 16px -3px var(--destructive)'
       }
     : {}
 
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-between p-2 rounded-md border transition-all duration-300 min-w-[68px] shrink-0',
+        'flex flex-col items-center justify-between p-2.5 rounded-md border transition-all duration-300 min-w-[70px] shrink-0',
         cardBg,
         className
       )}
       style={glowStyle}
     >
-      <span className="text-[10px] font-mono text-primary font-semibold leading-tight">
+      <span className="text-[11px] font-mono text-primary font-bold leading-none">
         {bullishLevel}
       </span>
       
-      <span className="text-sm font-bold my-1.5 tracking-tight">
+      <span className={cn(
+        "text-base font-black my-2 tracking-tight",
+        bias === 'bullish' && 'text-primary',
+        bias === 'bearish' && 'text-destructive'
+      )}>
         {timeframe}
       </span>
       
-      <span className="text-[10px] font-mono text-destructive font-semibold leading-tight">
+      <span className="text-[11px] font-mono text-destructive font-bold leading-none">
         {bearishLevel}
       </span>
     </div>

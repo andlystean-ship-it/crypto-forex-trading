@@ -1,7 +1,5 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Newspaper, Bookmark, Share } from '@phosphor-icons/react'
 import type { NewsItem } from '@/lib/types'
 
 interface NewsCardProps {
@@ -17,72 +15,50 @@ export function NewsCard({ news, className }: NewsCardProps) {
       ? 'text-destructive'
       : 'text-muted-foreground'
 
-  const timestamp = new Date(news.publishedAt).toLocaleString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const timeAgo = Math.floor((Date.now() - news.publishedAt) / 3600000)
+  const timeDisplay = timeAgo < 1 ? 'Vừa xong' : `${timeAgo}h trước`
 
   return (
-    <Card className={`p-4 border-border/50 bg-card/50 backdrop-blur-sm ${className}`}>
+    <Card className={`p-3 border-border/40 bg-card/30 backdrop-blur-sm hover:bg-card/50 transition-colors ${className}`}>
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-muted/50 border-accent/30">
+        <div className="flex items-center gap-2 flex-1">
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-muted/30 border-accent/20 font-bold uppercase">
             {news.source}
           </Badge>
-          <span className="text-[10px] text-muted-foreground font-mono">{timestamp}</span>
+          <span className="text-[9px] text-muted-foreground font-mono">{timeDisplay}</span>
         </div>
-        
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <Newspaper size={14} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <Bookmark size={14} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <Share size={14} />
-          </Button>
-        </div>
-      </div>
-
-      <h3 className="text-sm font-semibold mb-2 line-clamp-2">{news.title}</h3>
-      
-      <p className="text-xs text-muted-foreground mb-3 line-clamp-3">{news.summary}</p>
-      
-      <Button variant="link" className="h-auto p-0 text-xs text-accent hover:text-accent/80">
-        Xem thêm →
-      </Button>
-
-      <div className="flex flex-wrap gap-1 mt-3">
-        {news.tags.map((tag) => (
-          <Badge
-            key={tag}
-            variant="secondary"
-            className="text-[10px] px-1.5 py-0.5 bg-secondary/50 border border-border/30"
-          >
-            {tag}
-          </Badge>
-        ))}
         
         {news.hasTargetPrice && (
-          <Badge className="text-[10px] px-1.5 py-0.5 bg-target/20 text-target border border-target/30">
-            Có Mục Tiêu Giá
+          <Badge className="text-[9px] px-1.5 py-0 bg-target/15 text-target border border-target/30 font-bold">
+            Target
           </Badge>
         )}
       </div>
 
-      <div className="mt-3 pt-3 border-t border-border/30">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-medium">Phân tích cảm xúc:</span>
-          <span className={`text-xs font-semibold font-mono ${sentimentColor}`}>
-            {news.sentimentLabel === 'positive' ? 'Tích cực' : news.sentimentLabel === 'negative' ? 'Tiêu cực' : 'Trung tính'} (
-            {news.sentimentScore}%)
+      <h3 className="text-xs font-bold mb-2 line-clamp-2 leading-snug">{news.title}</h3>
+      
+      <p className="text-[11px] text-muted-foreground/90 mb-2.5 line-clamp-2 leading-relaxed">{news.summary}</p>
+
+      <div className="flex flex-wrap gap-1 mb-2.5">
+        {news.tags.map((tag) => (
+          <Badge
+            key={tag}
+            variant="secondary"
+            className="text-[9px] px-1.5 py-0 bg-secondary/40 border border-border/20 font-mono font-semibold"
+          >
+            {tag}
+          </Badge>
+        ))}
+      </div>
+
+      <div className="pt-2 border-t border-border/20">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold text-muted-foreground">Sentiment:</span>
+          <span className={`text-[10px] font-bold font-mono ${sentimentColor}`}>
+            {news.sentimentLabel === 'positive' ? '↗ Tích cực' : news.sentimentLabel === 'negative' ? '↘ Tiêu cực' : '→ Trung tính'} ({news.sentimentScore}%)
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground">{news.sentimentReason}</p>
+        <p className="text-[10px] text-muted-foreground/80 mt-1 leading-snug">{news.sentimentReason}</p>
       </div>
     </Card>
   )
