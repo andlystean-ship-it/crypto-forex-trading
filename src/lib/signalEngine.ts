@@ -1,66 +1,66 @@
 import type {
-  MarketB
   MarketBias,
   TimeframeSignal,
-  Timefra
-} from './ty
-const TIMEFRAMES:
-export const
-    id: 'xau',
-    marketSymbol
-    uiLabel: 'XA
+  TimeframeLabel,
+  Symbol,
+  Candle,
+  Trendline,
+  ChartData,
+  MarketScenario,
+  BiasDirection,
+  ScenarioSide,
+} from './types'
 
-    id: 'btc',
+const TIMEFRAMES: TimeframeLabel[] = ['15M', '1H', '2H', '4H', '6H', '8H', '12H', '1D']
 
-    uiLabel: 'BTC/USDT - Bitcoin',
-  }
+export const SYMBOLS: Symbol[] = [
+  {
     id: 'xau',
-    marketSymbol: 'ETHUS
-    uiLabel: 'ETH/USDT - Et
+    displayName: 'Gold',
+    marketSymbol: 'XAUUSD',
+    assetType: 'commodity',
+    uiLabel: 'XAU/USD - Gold',
+    quoteCurrency: 'USD',
   },
-
-  xau: { base: 5120, range
-  et
-
+  {
     id: 'btc',
-  let currentPrice = priceC
-
-    const timestamp = no
+    displayName: 'Bitcoin',
+    marketSymbol: 'BTCUSDT',
+    assetType: 'crypto',
     uiLabel: 'BTC/USDT - Bitcoin',
-
-    
-   
+    quoteCurrency: 'USDT',
+  },
+  {
     id: 'eth',
-      open,
-      low,
-      volume: Math.rando
-
-  }
+    displayName: 'Ethereum',
+    marketSymbol: 'ETHUSDT',
+    assetType: 'crypto',
+    uiLabel: 'ETH/USDT - Ethereum',
+    quoteCurrency: 'USDT',
   },
+]
 
+const SYMBOL_PRICE_RANGES: Record<string, { base: number; range: number }> = {
+  xau: { base: 5120, range: 80 },
+  btc: { base: 68500, range: 2000 },
+  eth: { base: 3450, range: 150 },
+}
 
+function generateCandles(symbolId: string, count: number = 120): Candle[] {
+  const candles: Candle[] = []
+  const priceConfig = SYMBOL_PRICE_RANGES[symbolId]
+  let currentPrice = priceConfig.base + (Math.random() - 0.5) * priceConfig.range * 0.3
 
-    let isHigh = true
+  for (let i = 0; i < count; i++) {
+    const timestamp = Date.now() - (count - i) * 900000
+    const volatility = 0.003 + Math.random() * 0.005
+    const trend = (Math.random() - 0.48) * 0.002
 
-      if (candles[i].high <= candl
- 
-
-    }
-    if (isHigh) highs.push({ index: i, price: candl
-  }
-  return { highs, lows }
-
-
-  const currentPrice = candles[cand
-  if (lows.length >= 2) {
-    const slope = (recentLows[recentLows.length 
-    const lastLowPrice = recentLows[recentLows.length 
-    const strength = isRis
-
-      type: 'ascending',
-      slope,
-      strength,
-      label: isRising ? 'Support tăng dần' : 'Support nằm ngang',
+    const open = currentPrice
+    const changePercent = trend + (Math.random() - 0.5) * volatility
+    const close = open * (1 + changePercent)
+    const high = Math.max(open, close) * (1 + Math.random() * volatility * 0.5)
+    const low = Math.min(open, close) * (1 - Math.random() * volatility * 0.5)
 
     candles.push({
       timestamp,
@@ -118,13 +118,13 @@ function generateTrendlines(candles: Candle[], symbolId: string): Trendline[] {
       id: `${symbolId}-support`,
       type: 'ascending',
       points: recentLows.map((l) => ({ x: l.index, y: l.price })),
-      bias,
+      slope,
       active: distance < 0.03,
       strength,
       broken: distance > 0.04 && currentPrice < lastLowPrice,
       label: isRising ? 'Support tăng dần' : 'Support nằm ngang',
     })
-  c
+  }
 
   if (highs.length >= 2) {
     const recentHighs = highs.slice(-3)
@@ -174,7 +174,7 @@ function calculateTimeframeSignals(candles: Candle[], symbolId: string): Timefra
     const bullishPercent = Math.max(15, Math.min(85, 50 + baseBias + momentumComponent * 100 + noise))
     const bearishPercent = 100 - bullishPercent
 
-      explanationText = `Giá đang dưới ${pivot}, xu hướng giảm ${biasStrength}. Target ${
+    const bullishLevel = Number((currentPrice * (1 + timeframeWeight * 0.01)).toFixed(2))
     const bearishLevel = Number((currentPrice * (1 - timeframeWeight * 0.01)).toFixed(2))
 
     let bias: BiasDirection = 'neutral'
@@ -190,11 +190,11 @@ function calculateTimeframeSignals(candles: Candle[], symbolId: string): Timefra
       score: (bullishPercent - bearishPercent) / 100,
       bias,
       strength,
-          ? `Timeframe ${bias.confid
+      isBullish: bias === 'bullish',
       isBearish: bias === 'bearish',
-    a
+    }
   })
- 
+}
 
 function aggregateMarketBias(signals: TimeframeSignal[]): MarketBias {
   const weights = [0.05, 0.08, 0.10, 0.13, 0.15, 0.17, 0.16, 0.16]
@@ -206,7 +206,7 @@ function aggregateMarketBias(signals: TimeframeSignal[]): MarketBias {
     const weight = weights[index]
     const bullishContrib = signal.isBullish ? weight * signal.strength * 100 : 0
     const bearishContrib = signal.isBearish ? weight * signal.strength * 100 : 0
-  co
+    
     totalBullishScore += bullishContrib
     totalBearishScore += bearishContrib
   })
@@ -218,11 +218,11 @@ function aggregateMarketBias(signals: TimeframeSignal[]): MarketBias {
   const dominantSide: BiasDirection = bullishPercent > 54 ? 'bullish' : bearishPercent > 54 ? 'bearish' : 'neutral'
 
   return {
-  const marketBias 
+    bullishPercent,
     bearishPercent,
-  return {
+    dominantSide,
     confidence: Math.abs(bullishPercent - bearishPercent) / 100,
-    marketBias,
+    lastUpdated: Date.now(),
   }
 }
 
@@ -244,7 +244,7 @@ function generateMarketScenario(candles: Candle[], bias: MarketBias, symbolId: s
   const pendingShort = Number((currentPrice * 1.005).toFixed(2))
 
   let explanationText = ''
-
+  let cautionText = ''
 
   const biasStrength = bias.confidence > 0.25 ? 'mạnh' : bias.confidence > 0.15 ? 'trung bình' : 'yếu'
   const distanceToPivot = ((currentPrice - pivot) / currentPrice) * 100
@@ -254,87 +254,87 @@ function generateMarketScenario(candles: Candle[], bias: MarketBias, symbolId: s
       explanationText = `Giá đang dưới Pivot ${pivot}, nhưng timeframe lớn ủng hộ tăng. Canh entry tại hỗ trợ.`
       cautionText = 'Chờ giá test lại vùng hỗ trợ và xuất hiện tín hiệu reversal.'
     } else {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      explanationText = `Giá đang trên Pivot ${pivot}, xu hướng tăng ${biasStrength}. Target ${targetPrice}.`
+      cautionText = 'Trailing stop khi giá tăng để bảo vệ lợi nhuận.'
+    }
+  } else if (bias.dominantSide === 'bearish') {
+    if (distanceToPivot > 0.05) {
+      explanationText = `Giá đang trên Pivot ${pivot}, nhưng timeframe lớn ủng hộ giảm. Canh entry short tại kháng cự.`
+      cautionText = 'Chờ giá test lại vùng kháng cự và xuất hiện tín hiệu rejection.'
+    } else {
+      explanationText = `Giá đang dưới Pivot ${pivot}, xu hướng giảm ${biasStrength}. Target ${targetPrice}.`
+      cautionText = 'Cẩn thận với bounce tại support key levels.'
+    }
+  } else {
+    explanationText = `Giá đang sideways gần Pivot ${pivot}. Timeframe nhỏ conflicting, chờ breakout rõ ràng.`
+    cautionText = 'Trade theo breakout direction với volume confirmation.'
+  }
+
+  const dominantSide: ScenarioSide = bias.dominantSide === 'bullish' ? 'long' : 'short'
+  const alternateSide: ScenarioSide = dominantSide === 'long' ? 'short' : 'long'
+
+  return {
+    symbol: symbolId,
+    currentPrice,
+    pivot,
+    targetPrice,
+    pendingLong,
+    pendingShort,
+    dominantScenario: {
+      side: dominantSide,
+      trigger: dominantSide === 'long' ? pendingLong : pendingShort,
+      target: targetPrice,
+      reason: dominantSide === 'long' 
+        ? `Timeframe lớn bullish, canh mua tại ${pendingLong} với target ${targetPrice}`
+        : `Timeframe lớn bearish, canh bán tại ${pendingShort} với target ${targetPrice}`,
+    },
+    alternateScenario: {
+      side: alternateSide,
+      trigger: alternateSide === 'long' ? pendingLong : pendingShort,
+      target: alternateSide === 'long' ? Number((currentPrice * 1.01).toFixed(2)) : Number((currentPrice * 0.99).toFixed(2)),
+      reason: alternateSide === 'long'
+        ? `Nếu giá breakout Pivot ${pivot}, có thể xem xét long với target ngắn hạn`
+        : `Nếu giá breakdown Pivot ${pivot}, có thể xem xét short với target ngắn hạn`,
+    },
+    explanationText,
+    cautionText,
+    invalidationLevel: bias.dominantSide === 'bullish' 
+      ? Number((currentPrice * 0.98).toFixed(2))
+      : Number((currentPrice * 1.02).toFixed(2)),
+  }
+}
+
+export interface SignalData {
+  marketBias: MarketBias
+  timeframeSignals: TimeframeSignal[]
+  chartData: ChartData
+  marketScenario: MarketScenario
+}
+
+export function generateSignalData(symbolId: string): SignalData {
+  const candles = generateCandles(symbolId, 120)
+  const timeframeSignals = calculateTimeframeSignals(candles, symbolId)
+  const marketBias = aggregateMarketBias(timeframeSignals)
+  const trendlines = generateTrendlines(candles, symbolId)
+  const marketScenario = generateMarketScenario(candles, marketBias, symbolId)
+
+  const prices = candles.map(c => c.close)
+  const minPrice = Math.min(...prices)
+  const maxPrice = Math.max(...prices)
+
+  return {
+    marketBias,
+    timeframeSignals,
+    chartData: {
+      symbol: symbolId,
+      candles,
+      trendlines,
+      currentPrice: candles[candles.length - 1].close,
+      priceRange: {
+        min: minPrice,
+        max: maxPrice,
+      },
+    },
+    marketScenario,
+  }
+}
