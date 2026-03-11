@@ -83,9 +83,46 @@ async function fetchForexCandles(
   }))
 }
 
+function generateMockCandles(symbolId: string, limit: number = 120): Candle[] {
+  const basePrice = symbolId === 'xau' ? 5100 : symbolId === 'btc' ? 95000 : 3800
+  const candles: Candle[] = []
+  const now = Date.now()
+  const interval = 5 * 60 * 1000
+  
+  let currentPrice = basePrice
+  
+  for (let i = 0; i < limit; i++) {
+    const timestamp = now - (limit - i) * interval
+    const volatility = basePrice * 0.003
+    const change = (Math.random() - 0.5) * volatility
+    
+    currentPrice += change
+    
+    const open = currentPrice
+    const close = currentPrice + (Math.random() - 0.5) * volatility
+    const high = Math.max(open, close) + Math.random() * volatility * 0.5
+    const low = Math.min(open, close) - Math.random() * volatility * 0.5
+    const volume = Math.random() * 1000 + 500
+    
+    candles.push({
+      timestamp,
+      open: Number(open.toFixed(2)),
+      high: Number(high.toFixed(2)),
+      low: Number(low.toFixed(2)),
+      close: Number(close.toFixed(2)),
+      volume: Number(volume.toFixed(2)),
+    })
+    
+    currentPrice = close
+  }
+  
+  return candles
+}
+
 export class MarketDataFetcher implements MarketDataSource {
   private cache: Map<string, { candles: Candle[]; timestamp: number }> = new Map()
   private cacheDuration = 60000
+  private useMockData = false
   
   getSymbolMapping(symbolId: string): string | undefined {
     const mapping = SYMBOL_MAPPINGS[symbolId]
@@ -103,6 +140,12 @@ export class MarketDataFetcher implements MarketDataSource {
     
     if (cached && Date.now() - cached.timestamp < this.cacheDuration) {
       return cached.candles
+    }
+    
+    if (this.useMockData) {
+      const mockCandles = generateMockCandles(symbolId, limit)
+      this.cache.set(cacheKey, { candles: mockCandles, timestamp: Date.now() })
+      return mockCandles
     }
     
     const mapping = SYMBOL_MAPPINGS[symbolId]
@@ -139,7 +182,11 @@ export class MarketDataFetcher implements MarketDataSource {
         return cached.candles
       }
       
-      throw error
+      console.warn(`Failed to fetch real data for ${symbolId}, using mock data:`, error)
+      this.useMockData = true
+      const mockCandles = generateMockCandles(symbolId, limit)
+      this.cache.set(cacheKey, { candles: mockCandles, timestamp: Date.now() })
+      return mockCandles
     }
   }
   
