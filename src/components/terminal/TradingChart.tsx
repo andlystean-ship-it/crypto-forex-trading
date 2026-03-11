@@ -19,7 +19,7 @@ export function TradingChart({ chartData, scenario, className }: TradingChartPro
 
     const containerWidth = svgRef.current.clientWidth
     const containerHeight = svgRef.current.clientHeight
-    const margin = { top: 40, right: 60, bottom: 30, left: 10 }
+    const margin = { top: 30, right: 70, bottom: 20, left: 10 }
     const width = containerWidth - margin.left - margin.right
     const height = containerHeight - margin.top - margin.bottom
 
@@ -32,37 +32,23 @@ export function TradingChart({ chartData, scenario, className }: TradingChartPro
       .domain([0, candles.length - 1])
       .range([0, width])
 
-    const yMin = Math.min(scenario.pendingLong * 0.998, chartData.priceRange.min)
-    const yMax = Math.max(scenario.pendingShort * 1.002, chartData.priceRange.max)
+    const yMin = Math.min(scenario.pendingLong * 0.997, chartData.priceRange.min)
+    const yMax = Math.max(scenario.targetPrice * 1.003, chartData.priceRange.max)
 
     const yScale = d3.scaleLinear().domain([yMin, yMax]).range([height, 0]).nice()
 
     g.append('g')
       .selectAll('.grid-line-horizontal')
-      .data(yScale.ticks(8))
+      .data(yScale.ticks(6))
       .enter()
       .append('line')
       .attr('class', 'grid-line-horizontal')
       .attr('x1', 0)
       .attr('x2', width)
-      .attr('y1', (d) => yScale(d))
-      .attr('y2', (d) => yScale(d))
-      .attr('stroke', 'oklch(0.75 0.15 195)')
-      .attr('stroke-opacity', 0.1)
-      .attr('stroke-width', 1)
-
-    g.append('g')
-      .selectAll('.grid-line-vertical')
-      .data(d3.range(0, candles.length, Math.ceil(candles.length / 10)))
-      .enter()
-      .append('line')
-      .attr('class', 'grid-line-vertical')
-      .attr('x1', (d) => xScale(d))
-      .attr('x2', (d) => xScale(d))
-      .attr('y1', 0)
-      .attr('y2', height)
-      .attr('stroke', 'oklch(0.75 0.15 195)')
-      .attr('stroke-opacity', 0.1)
+      .attr('y1', (d: number) => yScale(d))
+      .attr('y2', (d: number) => yScale(d))
+      .attr('stroke', 'oklch(0.3 0.02 240)')
+      .attr('stroke-opacity', 0.15)
       .attr('stroke-width', 1)
 
     trendlines.forEach((trendline) => {
@@ -79,9 +65,9 @@ export function TradingChart({ chartData, scenario, className }: TradingChartPro
         .attr('d', line)
         .attr('fill', 'none')
         .attr('stroke', trendline.type === 'ascending' ? 'oklch(0.85 0.22 150)' : 'oklch(0.65 0.25 25)')
-        .attr('stroke-opacity', 0.6)
+        .attr('stroke-opacity', 0.4)
         .attr('stroke-width', 1.5)
-        .attr('stroke-dasharray', '4,4')
+        .attr('stroke-dasharray', '5,5')
     })
 
     const candleWidth = Math.max(2, width / candles.length - 2)
@@ -96,7 +82,7 @@ export function TradingChart({ chartData, scenario, className }: TradingChartPro
         .attr('y1', yScale(candle.high))
         .attr('y2', yScale(candle.low))
         .attr('stroke', isBullish ? 'oklch(0.85 0.22 150)' : 'oklch(0.65 0.25 25)')
-        .attr('stroke-opacity', 0.8)
+        .attr('stroke-opacity', 0.9)
         .attr('stroke-width', 1)
 
       g.append('rect')
@@ -105,17 +91,18 @@ export function TradingChart({ chartData, scenario, className }: TradingChartPro
         .attr('width', candleWidth)
         .attr('height', Math.max(2, Math.abs(yScale(candle.open) - yScale(candle.close))))
         .attr('fill', isBullish ? 'oklch(0.85 0.22 150)' : 'oklch(0.65 0.25 25)')
-        .attr('fill-opacity', 0.9)
+        .attr('fill-opacity', 0.95)
     })
 
     const levels = [
-      { price: scenario.targetPrice, label: 'Giá Thị Trường Sẽ Hướng Tới', color: 'oklch(0.85 0.18 95)' },
-      { price: scenario.pendingShort, label: 'Đặt Lệnh Chờ Tự Động Short', color: 'oklch(0.65 0.25 25)' },
-      { price: scenario.pendingLong, label: 'Đặt Lệnh Chờ Tự Động Long', color: 'oklch(0.85 0.22 150)' },
+      { price: scenario.targetPrice, label: 'TARGET', color: 'oklch(0.85 0.18 95)', side: 'target' },
+      { price: scenario.pendingShort, label: 'SHORT ENTRY', color: 'oklch(0.65 0.25 25)', side: 'short' },
+      { price: scenario.pendingLong, label: 'LONG ENTRY', color: 'oklch(0.85 0.22 150)', side: 'long' },
     ]
 
     levels.forEach((level) => {
       const y = yScale(level.price)
+      const labelPadding = 6
 
       g.append('line')
         .attr('x1', 0)
@@ -124,49 +111,70 @@ export function TradingChart({ chartData, scenario, className }: TradingChartPro
         .attr('y2', y)
         .attr('stroke', level.color)
         .attr('stroke-width', 2)
-        .attr('stroke-opacity', 0.8)
-        .attr('stroke-dasharray', '6,3')
-        .style('filter', `drop-shadow(0 0 4px ${level.color})`)
+        .attr('stroke-opacity', 0.9)
+        .attr('stroke-dasharray', '6,4')
+
+      const bgPadding = 3
+      const textElem = g.append('text')
+        .attr('x', width - labelPadding)
+        .attr('y', y - labelPadding)
+        .attr('fill', level.color)
+        .attr('font-size', '9px')
+        .attr('font-weight', '700')
+        .attr('font-family', 'JetBrains Mono, monospace')
+        .attr('text-anchor', 'end')
+        .text(level.label)
+
+      const bbox = (textElem.node() as SVGTextElement).getBBox()
+      
+      g.insert('rect', 'text')
+        .attr('x', bbox.x - bgPadding)
+        .attr('y', bbox.y - bgPadding)
+        .attr('width', bbox.width + bgPadding * 2)
+        .attr('height', bbox.height + bgPadding * 2)
+        .attr('fill', 'oklch(0.15 0.01 240)')
+        .attr('opacity', 0.9)
+        .attr('rx', 2)
 
       g.append('text')
-        .attr('x', width + 4)
-        .attr('y', y + 4)
+        .attr('x', width + 6)
+        .attr('y', y + 3)
         .attr('fill', level.color)
         .attr('font-size', '10px')
-        .attr('font-weight', '600')
+        .attr('font-weight', '700')
         .attr('font-family', 'JetBrains Mono, monospace')
         .text(level.price.toFixed(2))
-        .style('filter', `drop-shadow(0 0 3px ${level.color})`)
     })
 
     g.append('text')
       .attr('x', width / 2)
       .attr('y', -10)
-      .attr('fill', 'oklch(0.95 0 0)')
-      .attr('font-size', '12px')
+      .attr('fill', 'oklch(0.75 0.15 195)')
+      .attr('font-size', '11px')
+      .attr('font-weight', '500')
       .attr('text-anchor', 'middle')
       .attr('opacity', 0.9)
       .text(scenario.explanationText)
 
-    const yAxis = d3.axisRight(yScale).ticks(8).tickSize(0).tickFormat(d3.format('.2f'))
+    const yAxis = d3.axisRight(yScale).ticks(6).tickSize(0).tickFormat(d3.format('.2f'))
 
     g.append('g')
       .attr('transform', `translate(${width}, 0)`)
       .call(yAxis)
-      .call((g) => g.select('.domain').remove())
-      .call((g) =>
+      .call((g: d3.Selection<SVGGElement, unknown, null, undefined>) => g.select('.domain').remove())
+      .call((g: d3.Selection<SVGGElement, unknown, null, undefined>) =>
         g
           .selectAll('.tick text')
-          .attr('fill', 'oklch(0.65 0.01 240)')
+          .attr('fill', 'oklch(0.5 0.01 240)')
           .attr('font-size', '10px')
           .attr('font-family', 'JetBrains Mono, monospace')
-          .attr('x', 4)
+          .attr('x', 6)
       )
   }, [chartData, scenario])
 
   return (
     <div className={className}>
-      <svg ref={svgRef} className="w-full h-full" style={{ minHeight: '400px' }} />
+      <svg ref={svgRef} className="w-full h-full" style={{ minHeight: '380px' }} />
     </div>
   )
 }

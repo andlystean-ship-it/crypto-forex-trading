@@ -20,16 +20,16 @@ export function HeaderControls({
   className,
 }: HeaderControlsProps) {
   return (
-    <div className={cn('px-4 py-4 border-b border-border/50 bg-card/20', className)}>
+    <div className={cn('px-3 py-3 border-b border-border/40 bg-card/10', className)}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-base font-semibold tracking-tight">Crypto and Forex Trading</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Terminal Signal Intelligence</p>
+          <h1 className="text-sm font-bold tracking-tight">Crypto and Forex Trading</h1>
+          <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider font-semibold">Terminal Signal Intelligence</p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           <Select value={selectedMode} onValueChange={(v) => onModeChange(v as ModeLabel)}>
-            <SelectTrigger className="w-[140px] h-8 text-xs border-accent/50 bg-card hover:border-accent transition-colors">
+            <SelectTrigger className="w-[135px] h-8 text-[11px] font-semibold border-accent/40 bg-card/80 hover:border-accent transition-colors">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -39,7 +39,7 @@ export function HeaderControls({
           </Select>
 
           <Select value={selectedSymbol.id} onValueChange={onSymbolChange}>
-            <SelectTrigger className="w-[140px] h-8 text-xs border-accent/50 bg-card hover:border-accent transition-colors">
+            <SelectTrigger className="w-[135px] h-8 text-[11px] font-semibold border-accent/40 bg-card/80 hover:border-accent transition-colors">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

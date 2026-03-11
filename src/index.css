@@ -78,16 +78,3 @@
 .font-mono {
   font-family: 'JetBrains Mono', 'Courier New', monospace;
 }
-
-@keyframes glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 8px currentColor;
-  }
-  50% {
-    box-shadow: 0 0 16px currentColor, 0 0 24px currentColor;
-  }
-}
-
-.animate-glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
-}

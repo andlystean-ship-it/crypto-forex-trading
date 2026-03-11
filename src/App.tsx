@@ -25,30 +25,30 @@ function App() {
     switch (activeTab) {
       case 'signals':
         return (
-          <div className="p-4 space-y-3">
-            <div className="bg-card/50 border border-border/50 rounded-lg p-4">
-              <h3 className="text-sm font-semibold mb-2 text-primary">Tín hiệu Hiện tại</h3>
-              <div className="space-y-2 text-xs">
+          <div className="px-3 py-2">
+            <div className="bg-card/40 border border-border/40 rounded-md p-3">
+              <h3 className="text-xs font-bold mb-2 text-primary uppercase tracking-wide">Tín hiệu Hiện tại</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Hướng ưu tiên:</span>
-                  <span className={signalData.marketBias.dominantSide === 'bullish' ? 'text-primary font-semibold' : 'text-destructive font-semibold'}>
+                  <span className={signalData.marketBias.dominantSide === 'bullish' ? 'text-primary font-bold' : 'text-destructive font-bold'}>
                     {signalData.marketBias.dominantSide === 'bullish' ? 'LONG' : 'SHORT'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Độ tin cậy:</span>
-                  <span className="font-mono">{(signalData.marketBias.confidence * 100).toFixed(0)}%</span>
+                  <span className="font-mono font-semibold">{(signalData.marketBias.confidence * 100).toFixed(0)}%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Mục tiêu:</span>
-                  <span className="text-target font-mono font-semibold">{signalData.marketScenario.targetPrice}</span>
+                  <span className="text-target font-mono font-bold">{signalData.marketScenario.targetPrice}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Pending Long:</span>
+                  <span className="text-muted-foreground">Entry Long:</span>
                   <span className="text-primary font-mono">{signalData.marketScenario.pendingLong}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Pending Short:</span>
+                <div className="flex justify-between col-span-2">
+                  <span className="text-muted-foreground">Entry Short:</span>
                   <span className="text-destructive font-mono">{signalData.marketScenario.pendingShort}</span>
                 </div>
               </div>
@@ -57,21 +57,21 @@ function App() {
         )
       case 'analysis':
         return (
-          <div className="p-4 space-y-3">
-            <div className="bg-card/50 border border-border/50 rounded-lg p-4">
-              <h3 className="text-sm font-semibold mb-3 text-accent">Phân tích Kỹ thuật</h3>
-              <div className="space-y-3 text-xs">
+          <div className="px-3 py-2">
+            <div className="bg-card/40 border border-border/40 rounded-md p-3">
+              <h3 className="text-xs font-bold mb-2 text-accent uppercase tracking-wide">Phân tích Kỹ thuật</h3>
+              <div className="space-y-2 text-xs">
                 <div>
-                  <p className="text-muted-foreground mb-1">Kịch bản chính:</p>
-                  <p className="text-foreground">{signalData.marketScenario.dominantScenario.reason}</p>
+                  <p className="text-muted-foreground mb-0.5 font-semibold">Kịch bản chính:</p>
+                  <p className="text-foreground leading-relaxed">{signalData.marketScenario.dominantScenario.reason}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground mb-1">Kịch bản thay thế:</p>
-                  <p className="text-foreground">{signalData.marketScenario.alternateScenario.reason}</p>
+                  <p className="text-muted-foreground mb-0.5 font-semibold">Kịch bản thay thế:</p>
+                  <p className="text-foreground leading-relaxed">{signalData.marketScenario.alternateScenario.reason}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground mb-1">Lưu ý:</p>
-                  <p className="text-target">{signalData.marketScenario.cautionText}</p>
+                  <p className="text-muted-foreground mb-0.5 font-semibold">Lưu ý:</p>
+                  <p className="text-target leading-relaxed">{signalData.marketScenario.cautionText}</p>
                 </div>
               </div>
             </div>
@@ -79,17 +79,17 @@ function App() {
         )
       case 'trendlines':
         return (
-          <div className="p-4 space-y-3">
-            <div className="bg-card/50 border border-border/50 rounded-lg p-4">
-              <h3 className="text-sm font-semibold mb-3">Đường Xu Hướng Đang Hoạt động</h3>
+          <div className="px-3 py-2">
+            <div className="bg-card/40 border border-border/40 rounded-md p-3">
+              <h3 className="text-xs font-bold mb-2 uppercase tracking-wide">Đường Xu Hướng</h3>
               <div className="space-y-2">
                 {signalData.chartData.trendlines.map((trendline) => (
-                  <div key={trendline.id} className="flex items-start gap-2 text-xs pb-2 border-b border-border/30 last:border-0">
-                    <div className={`w-2 h-2 rounded-full mt-1 ${trendline.type === 'ascending' ? 'bg-primary' : 'bg-destructive'}`} />
+                  <div key={trendline.id} className="flex items-start gap-2 text-xs pb-1.5 border-b border-border/20 last:border-0">
+                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${trendline.type === 'ascending' ? 'bg-primary' : 'bg-destructive'}`} />
                     <div className="flex-1">
-                      <p className="font-medium">{trendline.label}</p>
-                      <p className="text-muted-foreground text-[11px]">
-                        {trendline.type === 'ascending' ? 'Xu hướng tăng' : 'Xu hướng giảm'} - Độ mạnh: {(trendline.strength * 100).toFixed(0)}%
+                      <p className="font-semibold">{trendline.label}</p>
+                      <p className="text-muted-foreground text-[10px] leading-tight">
+                        {trendline.type === 'ascending' ? 'Xu hướng tăng' : 'Xu hướng giảm'} • Độ mạnh: {(trendline.strength * 100).toFixed(0)}%
                       </p>
                     </div>
                   </div>
@@ -105,11 +105,11 @@ function App() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="relative">
         <div
-          className="absolute inset-0 opacity-10 pointer-events-none"
+          className="absolute inset-0 opacity-[0.06] pointer-events-none"
           style={{
             backgroundImage: `
-              repeating-linear-gradient(0deg, oklch(0.75 0.15 195) 0px, transparent 1px, transparent 20px),
-              repeating-linear-gradient(90deg, oklch(0.75 0.15 195) 0px, transparent 1px, transparent 20px)
+              repeating-linear-gradient(0deg, oklch(0.75 0.15 195) 0px, transparent 1px, transparent 24px),
+              repeating-linear-gradient(90deg, oklch(0.75 0.15 195) 0px, transparent 1px, transparent 24px)
             `,
           }}
         />
@@ -125,10 +125,17 @@ function App() {
 
           <BiasBar bias={signalData.marketBias} />
 
-          <TimeframeStrip signals={signalData.timeframeSignals} />
+          <TimeframeStrip signals={signalData.timeframeSignals} className="py-2" />
 
-          <div className="px-4 py-4">
-            <div className="bg-card/30 rounded-lg border border-border/50 overflow-hidden shadow-2xl" style={{ boxShadow: `0 0 40px ${signalData.marketBias.dominantSide === 'bullish' ? 'oklch(0.85 0.22 150 / 0.1)' : 'oklch(0.65 0.25 25 / 0.1)'}` }}>
+          <div className="px-3 pt-3 pb-2">
+            <div 
+              className="bg-card/30 rounded-lg border border-border/50 overflow-hidden" 
+              style={{ 
+                boxShadow: signalData.marketBias.dominantSide === 'bullish' 
+                  ? '0 4px 24px -4px oklch(0.85 0.22 150 / 0.15)' 
+                  : '0 4px 24px -4px oklch(0.65 0.25 25 / 0.15)'
+              }}
+            >
               <TradingChart chartData={signalData.chartData} scenario={signalData.marketScenario} />
             </div>
           </div>
@@ -141,9 +148,9 @@ function App() {
 
           {renderTabContent()}
 
-          <div className="mt-6 border-t border-border/50 bg-card/20">
-            <div className="pt-4">
-              <h2 className="px-4 text-sm font-semibold mb-3">Tin tức & Phân tích Cảm xúc</h2>
+          <div className="mt-4 border-t border-border/30 bg-card/10">
+            <div className="pt-3">
+              <h2 className="px-3 text-xs font-bold mb-2 uppercase tracking-wide text-muted-foreground">Tin tức & Cảm xúc thị trường</h2>
 
               <NewsFilterBar
                 categories={NEWS_CATEGORIES}
@@ -151,7 +158,7 @@ function App() {
                 onCategoryChange={setSelectedNewsCategory}
               />
 
-              <div className="px-4 py-4 space-y-4">
+              <div className="px-3 py-3 space-y-3">
                 {filteredNews.map((news) => (
                   <NewsCard key={news.id} news={news} />
                 ))}
