@@ -2,13 +2,13 @@ import type { SignalData } from './signalEngine'
 import { computeSignalData } from './signalEngine'
 import { marketDataFetcher } from './server/marketData'
 import { newsAdapter } from './server/newsAdapter'
-  isStale: boolean
+import type { NewsItem } from './types'
 
-export interface NewsResponse {
-  lastUpdated: num
-  isStale: boolean
+export interface MarketStateResponse {
+  data: SignalData
   lastUpdated: number
-c
+  isStale: boolean
+}
 
 export interface NewsResponse {
   symbol: string
@@ -23,24 +23,36 @@ export async function fetchMarketState(symbolId: string, signal?: AbortSignal): 
   const cached = marketStateCache.get(symbolId)
   const now = Date.now()
   
-    if (cached) {
-        data
-        lastUpdated: cac
+  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+    return {
+      data: cached.data,
+      lastUpdated: cached.timestamp,
+      isStale: false
     }
   }
-    }
-  c
   
-    las
-  }
-
-
-
-
-
-
-
-
+  try {
+    const candles = await marketDataFetcher.fetchCandles(symbolId, '5m', 120, signal)
+    const signalData = computeSignalData(symbolId, candles)
+    
+    marketStateCache.set(symbolId, {
+      data: signalData,
+      timestamp: now
+    })
+    
+    return {
+      data: signalData,
+      lastUpdated: now,
+      isStale: false
+    }
+  } catch (error) {
+    if (cached) {
+      return {
+        data: cached.data,
+        lastUpdated: cached.timestamp,
+        isStale: true
+      }
+    }
 
 
 
@@ -62,9 +74,11 @@ export async function fetchMarketState(symbolId: string, signal?: AbortSignal): 
 export async function fetchNews(symbolId: string, signal?: AbortSignal): Promise<NewsResponse> {
   const news = await newsAdapter.fetchNews(symbolId, signal)
   
-
-
-
-
+  return {
+    symbol: symbolId,
+    lastUpdated: Date.now(),
+    items: news
+  }
+}
 
 
