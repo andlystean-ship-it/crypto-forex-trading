@@ -1,10 +1,10 @@
 import type { SignalData } from './signalEngine'
-import type { NewsItem } from './types'
+import { computeSignalData } from './signalEngine'
 import { marketDataFetcher } from './server/marketData'
 import { newsAdapter } from './server/newsAdapter'
+import type { NewsItem } from './types'
 
 export interface MarketStateResponse {
-  symbol: string
   data: SignalData
   isStale: boolean
   lastUpdated: number
@@ -18,7 +18,6 @@ export interface NewsResponse {
 
 const marketStateCache = new Map<string, { data: SignalData; timestamp: number }>()
 const CACHE_DURATION = 60000
-const STALE_THRESHOLD = 300000
 
 export async function fetchMarketState(symbolId: string, signal?: AbortSignal): Promise<MarketStateResponse> {
   const cached = marketStateCache.get(symbolId)
@@ -26,15 +25,13 @@ export async function fetchMarketState(symbolId: string, signal?: AbortSignal): 
   
   if (cached && now - cached.timestamp < CACHE_DURATION) {
     return {
-      symbol: symbolId,
-      lastUpdated: cached.timestamp,
-      isStale: false,
       data: cached.data,
+      isStale: false,
+      lastUpdated: cached.timestamp,
     }
   }
   
   try {
-    const { computeSignalData } = await import('./signalEngine')
     const candles = await marketDataFetcher.fetchCandles(symbolId, '5m', 120, signal)
     
     if (!candles || candles.length === 0) {
@@ -46,35 +43,28 @@ export async function fetchMarketState(symbolId: string, signal?: AbortSignal): 
     marketStateCache.set(symbolId, { data: signalData, timestamp: now })
     
     return {
-      symbol: symbolId,
-      lastUpdated: now,
-      isStale: false,
       data: signalData,
+      isStale: false,
+      lastUpdated: now,
     }
-  } catch (fetchError) {
-    if (cached && now - cached.timestamp < STALE_THRESHOLD) {
+  } catch (error) {
+    if (cached) {
       return {
-        symbol: symbolId,
-        lastUpdated: cached.timestamp,
-        isStale: true,
         data: cached.data,
+        isStale: true,
+        lastUpdated: cached.timestamp,
       }
     }
-    
-    throw fetchError
+    throw error
   }
 }
 
 export async function fetchNews(symbolId: string, signal?: AbortSignal): Promise<NewsResponse> {
-  try {
-    const news = await newsAdapter.fetchNews(symbolId, signal)
-    
-    return {
-      symbol: symbolId,
-      lastUpdated: Date.now(),
-      items: news,
-    }
-  } catch (error) {
-    throw new Error(`Failed to fetch news: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  const news = await newsAdapter.fetchNews(symbolId, signal)
+  
+  return {
+    symbol: symbolId,
+    lastUpdated: Date.now(),
+    items: news,
   }
 }

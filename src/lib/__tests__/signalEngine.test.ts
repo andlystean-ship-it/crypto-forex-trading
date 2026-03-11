@@ -1,24 +1,24 @@
 import { describe, it, expect } from 'vitest'
 import type { Candle } from '../types'
-import type { Candle } from '../types'
+import { computeSignalData } from '../signalEngine'
 
 function generateTestCandles(count: number, basePrice: number, trend: 'up' | 'down' | 'sideways' = 'sideways'): Candle[] {
   const candles: Candle[] = []
   const now = Date.now()
   let price = basePrice
   
-      change = (i % 2 === 0 ? 1 : -
+  for (let i = 0; i < count; i++) {
+    const timestamp = now - (count - i) * 5 * 60 * 1000
     
-    
-    const close = 
-    const low = Math.min(
-    candles.push({
-      open: parseFloat(open.toFixe
+    let change = 0
+    if (trend === 'up') {
+      change = basePrice * 0.002
+    } else if (trend === 'down') {
       change = -basePrice * 0.002
     } else {
       change = (i % 2 === 0 ? 1 : -1) * basePrice * 0.001
     }
-  }
+    
     price = price + change
     
     const open = price
@@ -54,78 +54,15 @@ describe('Signal Engine - Determinism', () => {
   it('should produce different results for different candles', () => {
     const candles1 = generateTestCandles(120, 50000, 'up')
     const candles2 = generateTestCandles(120, 50000, 'down')
-  it
+    
     const result1 = computeSignalData('btc', candles1)
     const result2 = computeSignalData('btc', candles2)
     
     expect(result1.marketBias.dominantSide).not.toEqual(result2.marketBias.dominantSide)
   })
-  
-  it('should not use Math.random() - results are fully deterministic', () => {
-  it('should generate exactly 8 timeframe signals', () =>
-    
-    expect(result.time
-  
-    const candles = generateTestCandles(120, 50000, '
-    
-    
-    })
-  
-    c
-    
-  
-
-        expect(signal.score).toBeLessThan(42)
-      } else {
-        expect(signal.score).toBeLessThanOrEqual(58)
-      }
-  })
-  it('should have valid strength values', () => {
-    
-  
-      expect(signal.strength).toBeLessThanOrEqual(1
-  })
-
-  it
-    const result = computeSignalData('btc', candles)
-    
-  
-  it('should have bearish bias for downtrending c
-    const result = computeSignalData('btc', candles)
-    
-  })
-  it('should have percentages sum to 10
-    const result = c
-    
-  
-
-    
-    expect(result.marketBias.confidence).toBeLessThanOrEqual(1)
 })
-describe('Signal Engine - Market Scenario', () => {
-    
-    
-    const recentHigh = Math.max(...recentCan
-    
-    expect(result.marketScenario.pivot).toBeLess
-  
-    const candles = generateTestCandles(120, 50000
-    
-  })
-  it('
-    
-  
-    expect(result.marketScenario.dominantScenari
-  
-    const candles = generateTestCandles(120, 50000, 
-    
-    expect(result.marketScenario.explanationText.lengt
-  })
 
-  it
-  
-
-  })
+describe('Signal Engine - Timeframe Signals', () => {
   it('should generate exactly 8 timeframe signals', () => {
     const candles = generateTestCandles(120, 50000, 'sideways')
     const result = computeSignalData('btc', candles)
@@ -254,35 +191,30 @@ describe('Signal Engine - Chart Data', () => {
     expect(result.chartData.candles).toEqual(candles)
   })
   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  it('should have valid price range', () => {
+    const candles = generateTestCandles(120, 50000, 'sideways')
+    const result = computeSignalData('btc', candles)
+    
+    const allPrices = candles.map(c => c.close)
+    const expectedMin = Math.min(...allPrices)
+    const expectedMax = Math.max(...allPrices)
+    
+    expect(result.chartData.priceRange.min).toBe(expectedMin)
+    expect(result.chartData.priceRange.max).toBe(expectedMax)
+  })
+  
+  it('should generate trendlines', () => {
+    const candles = generateTestCandles(120, 50000, 'sideways')
+    const result = computeSignalData('btc', candles)
+    
+    expect(result.chartData.trendlines.length).toBeGreaterThan(0)
+    
+    result.chartData.trendlines.forEach(trendline => {
+      expect(trendline.id).toBeTruthy()
+      expect(['ascending', 'descending']).toContain(trendline.type)
+      expect(trendline.points.length).toBeGreaterThan(0)
+      expect(trendline.strength).toBeGreaterThanOrEqual(0)
+      expect(trendline.strength).toBeLessThanOrEqual(1)
+    })
+  })
+})

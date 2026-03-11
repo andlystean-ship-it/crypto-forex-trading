@@ -1,7 +1,7 @@
 import type { NewsItem } from '../types'
 
 const NEWS_API_BASE = 'https://newsapi.org/v2'
-const NEWS_API_KEY = process.env.NEWS_API_KEY || 'demo'
+const NEWS_API_KEY = 'demo'
 
 interface NewsAPIArticle {
   source: { id: string | null; name: string }
