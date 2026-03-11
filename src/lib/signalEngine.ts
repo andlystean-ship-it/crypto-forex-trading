@@ -14,7 +14,7 @@ export const SYMBOLS: Symbol[] = [
   {
     id: 'btc',
     displayName: 'Bitcoin',
-    marketSymbol: 'BTC/USDT',
+    marketSymbol: 'BTCUSDT',
     assetType: 'crypto',
     uiLabel: 'BTC',
     quoteCurrency: 'USDT',
@@ -22,7 +22,7 @@ export const SYMBOLS: Symbol[] = [
   {
     id: 'eth',
     displayName: 'Ethereum',
-    marketSymbol: 'ETH/USDT',
+    marketSymbol: 'ETHUSDT',
     assetType: 'crypto',
     uiLabel: 'ETH',
     quoteCurrency: 'USDT',
@@ -30,48 +30,12 @@ export const SYMBOLS: Symbol[] = [
   {
     id: 'xau',
     displayName: 'Gold',
-    marketSymbol: 'XAU/USD',
+    marketSymbol: 'XAUUSD',
     assetType: 'commodity',
     uiLabel: 'XAU',
     quoteCurrency: 'USD',
   },
 ]
-
-const SYMBOL_PRICE_RANGES: Record<string, { base: number; range: number }> = {
-  btc: { base: 68500, range: 2000 },
-  eth: { base: 3200, range: 150 },
-  xau: { base: 5100, range: 50 },
-}
-
-function generateCandles(symbolId: string, count: number): Candle[] {
-  const priceConfig = SYMBOL_PRICE_RANGES[symbolId] || SYMBOL_PRICE_RANGES.btc
-  const candles: Candle[] = []
-  let currentPrice = priceConfig.base
-
-  for (let i = 0; i < count; i++) {
-    const timestamp = Date.now() - (count - i) * 300000
-    const trend = (Math.random() - 0.48) * (priceConfig.range / count)
-    currentPrice += trend
-
-    const open = currentPrice
-    const close = currentPrice + (Math.random() - 0.5) * (priceConfig.range * 0.01)
-    const high = Math.max(open, close) + Math.random() * (priceConfig.range * 0.005)
-    const low = Math.min(open, close) - Math.random() * (priceConfig.range * 0.005)
-
-    candles.push({
-      timestamp,
-      open,
-      high,
-      low,
-      close,
-      volume: Math.random() * 1000000 + 500000,
-    })
-
-    currentPrice = close
-  }
-
-  return candles
-}
 
 function findSwingPoints(candles: Candle[], lookback: number = 5) {
   const highs: { index: number; price: number }[] = []
@@ -304,8 +268,7 @@ export interface SignalData {
   marketScenario: MarketScenario
 }
 
-export function generateSignalData(symbolId: string): SignalData {
-  const candles = generateCandles(symbolId, 120)
+export function computeSignalData(symbolId: string, candles: Candle[]): SignalData {
   const trendlines = generateTrendlines(candles)
   const timeframeSignals = generateTimeframeSignals(candles)
   const marketBias = generateMarketBias(timeframeSignals)

@@ -6,9 +6,11 @@ import { TradingChart } from './components/terminal/TradingChart'
 import { TerminalTabs } from './components/terminal/TerminalTabs'
 import { NewsFilterBar } from './components/terminal/NewsFilterBar'
 import { NewsCard } from './components/terminal/NewsCard'
-import { SYMBOLS, generateSignalData } from './lib/signalEngine'
-import { MOCK_NEWS, NEWS_CATEGORIES, filterNewsByCategory } from './lib/newsData'
+import { SYMBOLS } from './lib/signalEngine'
+import { NEWS_CATEGORIES, filterNewsByCategory } from './lib/newsData'
+import { useMarketState, useNews } from './hooks/use-market-data'
 import type { ModeLabel } from './lib/types'
+import { Badge } from './components/ui/badge'
 
 function App() {
   const [selectedSymbolId, setSelectedSymbolId] = useState('xau')
@@ -17,9 +19,36 @@ function App() {
   const [selectedNewsCategory, setSelectedNewsCategory] = useState('all')
 
   const selectedSymbol = SYMBOLS.find((s) => s.id === selectedSymbolId) || SYMBOLS[0]
-  const signalData = generateSignalData(selectedSymbolId)
   
-  const filteredNews = filterNewsByCategory(selectedNewsCategory, MOCK_NEWS)
+  const { data: signalData, isLoading, isStale, error, lastUpdated } = useMarketState(selectedSymbolId)
+  const { news } = useNews(selectedSymbolId)
+  
+  const filteredNews = filterNewsByCategory(selectedNewsCategory, news)
+
+  if (isLoading && !signalData) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-pulse text-primary text-sm font-mono">Loading market data...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !signalData) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center max-w-md px-4">
+          <div className="text-destructive text-sm font-semibold mb-2">Error loading market data</div>
+          <div className="text-muted-foreground text-xs">{error.message}</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!signalData) {
+    return null
+  }
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -27,7 +56,14 @@ function App() {
         return (
           <div className="px-3 py-2">
             <div className="bg-card/40 border border-border/40 rounded-md p-3">
-              <h3 className="text-xs font-bold mb-2 text-primary uppercase tracking-wide">Tín hiệu Hiện tại</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-bold text-primary uppercase tracking-wide">Tín hiệu Hiện tại</h3>
+                {isStale && (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-destructive/50 text-destructive">
+                    STALE
+                  </Badge>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Hướng ưu tiên:</span>
@@ -159,12 +195,20 @@ function App() {
               />
 
               <div className="px-3 py-2.5 space-y-2.5">
-                {filteredNews.map((news) => (
-                  <NewsCard key={news.id} news={news} />
+                {filteredNews.map((newsItem) => (
+                  <NewsCard key={newsItem.id} news={newsItem} />
                 ))}
               </div>
             </div>
           </div>
+          
+          {lastUpdated && (
+            <div className="px-3 py-2 text-center">
+              <p className="text-[9px] text-muted-foreground font-mono">
+                Last updated: {new Date(lastUpdated).toLocaleTimeString()}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
