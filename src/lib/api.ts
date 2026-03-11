@@ -1,11 +1,11 @@
 import type { SignalData } from './signalEngine'
-import type { NewsItem } from './types'
 
-export interface MarketStateResponse {
-  data: SignalData
-  isStale: boolean
+
   lastUpdated: number
-}
+
+  lastUpdated: num
+  lastUpdated: number
+
 
 export interface NewsResponse {
   lastUpdated: number
@@ -26,7 +26,7 @@ export async function fetchMarketState(symbol: string): Promise<MarketStateRespo
     throw new Error(`Failed to fetch market state: ${response.statusText}`)
   }
   
-  return response.json()
+
 }
 
 export async function fetchNews(symbol: string): Promise<NewsResponse> {
